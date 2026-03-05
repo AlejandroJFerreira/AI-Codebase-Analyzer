@@ -1,4 +1,5 @@
 import os
+import json
 import requests
 import chromadb
 from dotenv import load_dotenv
@@ -15,21 +16,22 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
 N_RESULTS = 6
 MAX_CONTEXT_CHARS = 12000  # BIG speed win
 
-def ask_codebase(question: str) -> dict:
+
+def _build_context_and_sources(question: str):
+    """
+    Shared helper for both normal + streaming answers.
+    """
     results = collection.query(
         query_texts=[question],
         n_results=N_RESULTS,
-        include=["documents", "metadatas"]
+        include=["documents", "metadatas"],
     )
 
     docs = results.get("documents", [[]])[0]
     metas = results.get("metadatas", [[]])[0]
 
     if not docs:
-        return {
-            "answer": "No documents found in the DB. Did you run ingest.py?",
-            "sources": []
-        }
+        return None, []
 
     # Build context gradually until we hit cap
     context_parts = []
@@ -39,13 +41,27 @@ def ask_codebase(question: str) -> dict:
     for doc, meta in zip(docs, metas):
         if used >= MAX_CONTEXT_CHARS:
             break
+
         take = doc[: max(0, MAX_CONTEXT_CHARS - used)]
         if take:
             context_parts.append(take)
             used += len(take)
-            sources.append({"path": meta.get("path"), "chunk": meta.get("chunk")})
+            sources.append(
+                {"path": meta.get("path"), "chunk": meta.get("chunk")}
+            )
 
     context = "\n\n---\n\n".join(context_parts)
+    return context, sources
+
+
+def ask_codebase(question: str) -> dict:
+    context, sources = _build_context_and_sources(question)
+
+    if not context:
+        return {
+            "answer": "No documents found in the DB. Did you run ingest.py?",
+            "sources": []
+        }
 
     prompt = f"""You are a software engineer.
 
@@ -64,7 +80,7 @@ Question:
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
         "options": {
-            "num_ctx": 4096  # helps speed / memory on many machines
+            "num_ctx": 4096
         }
     }
 
@@ -74,3 +90,56 @@ Question:
 
     answer = data["message"]["content"]
     return {"answer": answer, "sources": sources}
+
+
+def stream_codebase_answer(question: str):
+    """
+    Yields tokens for StreamingResponse.
+    (Note: this yields only the answer text; sources can be returned separately if you want.)
+    """
+    context, _sources = _build_context_and_sources(question)
+
+    if not context:
+        yield "No documents found in the DB. Did you run ingest.py?"
+        return
+
+    prompt = f"""You are a software engineer.
+
+Answer the question about this codebase using ONLY the code context below.
+If you can't answer from the context, say what file(s) you'd need.
+
+Code context:
+{context}
+
+Question:
+{question}
+"""
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": True,
+        "options": {
+            "num_ctx": 4096
+        }
+    }
+
+    # stream=True makes requests not buffer the whole response
+    with requests.post(
+        f"{OLLAMA_URL}/api/chat",
+        json=payload,
+        stream=True,
+        timeout=300
+    ) as r:
+        r.raise_for_status()
+
+        for line in r.iter_lines():
+            if not line:
+                continue
+
+            data = json.loads(line)
+
+            # Ollama chat streaming: chunks come in data["message"]["content"]
+            msg = data.get("message")
+            if msg and "content" in msg:
+                yield msg["content"]
