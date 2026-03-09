@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Codebase Analyzer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #60a5fa;
+      --border: #374151;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #0b1220 0%, #111827 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card {
+      background: rgba(17, 24, 39, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 90px;
+      resize: vertical;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: var(--accent);
+      color: #08111f;
+      font-weight: 700;
+      min-width: 130px;
+      align-self: flex-start;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .answer-box {
+      white-space: pre-wrap;
+      line-height: 1.6;
+      min-height: 120px;
+      font-size: 1rem;
+    }
+
+    .sources {
+      margin-top: 14px;
+      padding-left: 18px;
+    }
+
+    .sources li {
+      margin-bottom: 8px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #172554;
+      color: #bfdbfe;
+      border: 1px solid #1d4ed8;
+      font-size: 0.85rem;
+    }
+
+    .spinner {
+      display: none;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .examples {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .example-btn {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      min-width: auto;
+      font-weight: 500;
+    }
+
+    .example-btn:hover {
+      border-color: var(--accent);
+      color: #dbeafe;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Codebase Analyzer</h1>
+    <p class="subtitle">
+      Ask natural language questions about an indexed repository. Answers stream live from a local LLM and include cited source chunks.
+    </p>
+
+    <div class="card">
+      <div class="input-row">
+        <textarea id="question" placeholder="Ask something like: Explain how ingest.py works"></textarea>
+        <button id="askBtn">Ask</button>
+      </div>
+
+      <div class="examples">
+        <button class="example-btn" data-q="Explain how ingest.py works">Explain ingest.py</button>
+        <button class="example-btn" data-q="How does query.py build context?">How query.py builds context</button>
+        <button class="example-btn" data-q="Explain how this codebase works">Explain the codebase</button>
+      </div>
+
+      <div class="row">
+        <span class="badge">Streaming enabled</span>
+        <span id="spinner" class="spinner">Generating answer...</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Answer</h2>
+      <div id="answer" class="answer-box muted">Your answer will appear here.</div>
+    </div>
+
+    <div class="card">
+      <h2>Sources</h2>
+      <ul id="sources" class="sources">
+        <li class="muted">Sources will appear here after the answer finishes.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const questionEl = document.getElementById("question");
+    const askBtn = document.getElementById("askBtn");
+    const answerEl = document.getElementById("answer");
+    const sourcesEl = document.getElementById("sources");
+    const spinnerEl = document.getElementById("spinner");
+    const exampleButtons = document.querySelectorAll(".example-btn");
+
+    exampleButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        questionEl.value = btn.dataset.q;
+      });
+    });
+
+    async function askQuestion() {
+      const question = questionEl.value.trim();
+      if (!question) return;
+
+      askBtn.disabled = true;
+      spinnerEl.style.display = "inline";
+      answerEl.textContent = "";
+      answerEl.classList.remove("muted");
+      sourcesEl.innerHTML = "<li class='muted'>Loading sources...</li>";
+
+      try {
+        // Start streaming answer
+        const streamResp = await fetch(`/ask_stream?question=${encodeURIComponent(question)}`);
+        if (!streamResp.ok || !streamResp.body) {
+          throw new Error("Streaming request failed.");
+        }
+
+        const reader = streamResp.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          answerEl.textContent += decoder.decode(value, { stream: true });
+        }
+
+        // Fetch structured answer + sources after stream finishes
+        const jsonResp = await fetch(`/ask?question=${encodeURIComponent(question)}`);
+        if (!jsonResp.ok) {
+          throw new Error("Failed to fetch sources.");
+        }
+
+        const data = await jsonResp.json();
+
+        if (data.sources && data.sources.length > 0) {
+          sourcesEl.innerHTML = "";
+          for (const src of data.sources) {
+            const li = document.createElement("li");
+            li.textContent = `${src.path} (chunk ${src.chunk})`;
+            sourcesEl.appendChild(li);
+          }
+        } else {
+          sourcesEl.innerHTML = "<li class='muted'>No sources returned.</li>";
+        }
+      } catch (err) {
+        answerEl.textContent = `Error: ${err.message}`;
+        sourcesEl.innerHTML = "<li class='muted'>Unable to load sources.</li>";
+      } finally {
+        askBtn.disabled = false;
+        spinnerEl.style.display = "none";
+      }
+    }
+
+    askBtn.addEventListener("click", askQuestion);
+
+    questionEl.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        askQuestion();
+      }
+    });
+  </script>
+</body>
+</html>
