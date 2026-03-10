@@ -14,6 +14,8 @@
       --muted: #9ca3af;
       --accent: #60a5fa;
       --border: #374151;
+      --success: #22c55e;
+      --error: #f87171;
     }
 
     * {
@@ -37,6 +39,10 @@
     h1 {
       margin: 0 0 10px;
       font-size: 2rem;
+    }
+
+    h2 {
+      margin-top: 0;
     }
 
     .subtitle {
@@ -158,6 +164,18 @@
       border-color: var(--accent);
       color: #dbeafe;
     }
+
+    .status-success {
+      color: var(--success);
+    }
+
+    .status-error {
+      color: var(--error);
+    }
+
+    .status-default {
+      color: var(--muted);
+    }
   </style>
 </head>
 <body>
@@ -166,6 +184,23 @@
     <p class="subtitle">
       Ask natural language questions about an indexed repository. Answers stream live from a local LLM and include cited source chunks.
     </p>
+
+    <div class="card">
+      <h2>Ingest GitHub Repository</h2>
+      <div class="input-row">
+        <textarea
+          id="repoUrl"
+          placeholder="Paste a GitHub repo URL, e.g. https://github.com/user/repo"
+          style="min-height: 70px;"
+        ></textarea>
+        <button id="ingestBtn">Ingest Repo</button>
+      </div>
+
+      <div class="row">
+        <span class="badge">GitHub ingest enabled</span>
+        <span id="ingestStatus" class="status-default">No repo ingested yet.</span>
+      </div>
+    </div>
 
     <div class="card">
       <div class="input-row">
@@ -199,6 +234,10 @@
   </div>
 
   <script>
+    const repoUrlEl = document.getElementById("repoUrl");
+    const ingestBtn = document.getElementById("ingestBtn");
+    const ingestStatusEl = document.getElementById("ingestStatus");
+
     const questionEl = document.getElementById("question");
     const askBtn = document.getElementById("askBtn");
     const answerEl = document.getElementById("answer");
@@ -211,6 +250,52 @@
         questionEl.value = btn.dataset.q;
       });
     });
+
+    function setIngestStatus(message, type = "default") {
+      ingestStatusEl.textContent = message;
+      ingestStatusEl.className = "";
+
+      if (type === "success") {
+        ingestStatusEl.classList.add("status-success");
+      } else if (type === "error") {
+        ingestStatusEl.classList.add("status-error");
+      } else {
+        ingestStatusEl.classList.add("status-default");
+      }
+    }
+
+    async function ingestRepo() {
+      const repoUrl = repoUrlEl.value.trim();
+      if (!repoUrl) return;
+
+      ingestBtn.disabled = true;
+      setIngestStatus("Ingesting repository... this may take a bit.");
+
+      try {
+        const resp = await fetch("/ingest_github", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ repo_url: repoUrl })
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          throw new Error(data.detail || "Failed to ingest repository.");
+        }
+
+        setIngestStatus(
+          `Indexed ${data.files_indexed} files / ${data.chunks_indexed} chunks from ${data.repo_url}`,
+          "success"
+        );
+      } catch (err) {
+        setIngestStatus(`Error: ${err.message}`, "error");
+      } finally {
+        ingestBtn.disabled = false;
+      }
+    }
 
     async function askQuestion() {
       const question = questionEl.value.trim();
@@ -265,6 +350,7 @@
       }
     }
 
+    ingestBtn.addEventListener("click", ingestRepo);
     askBtn.addEventListener("click", askQuestion);
 
     questionEl.addEventListener("keydown", (e) => {

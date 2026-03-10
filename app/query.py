@@ -6,21 +6,30 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Must match ingest.py
+# Persistent Chroma client
 client = chromadb.PersistentClient(path=".chroma")
-collection = client.get_or_create_collection("codebase")
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
 
 N_RESULTS = 6
-MAX_CONTEXT_CHARS = 12000  # BIG speed win
+MAX_CONTEXT_CHARS = 12000  # speed / prompt cap
+
+
+def get_collection():
+    """
+    Always fetch the current collection fresh.
+    This avoids stale collection handles after re-ingesting / deleting.
+    """
+    return client.get_or_create_collection("codebase")
 
 
 def _build_context_and_sources(question: str):
     """
     Shared helper for both normal + streaming answers.
     """
+    collection = get_collection()
+
     results = collection.query(
         query_texts=[question],
         n_results=N_RESULTS,
@@ -59,7 +68,7 @@ def ask_codebase(question: str) -> dict:
 
     if not context:
         return {
-            "answer": "No documents found in the DB. Did you run ingest.py?",
+            "answer": "No documents found in the DB. Did you run ingest.py or ingest a GitHub repo?",
             "sources": []
         }
 
@@ -95,12 +104,11 @@ Question:
 def stream_codebase_answer(question: str):
     """
     Yields tokens for StreamingResponse.
-    (Note: this yields only the answer text; sources can be returned separately if you want.)
     """
     context, _sources = _build_context_and_sources(question)
 
     if not context:
-        yield "No documents found in the DB. Did you run ingest.py?"
+        yield "No documents found in the DB. Did you run ingest.py or ingest a GitHub repo?"
         return
 
     prompt = f"""You are a software engineer.
@@ -124,7 +132,6 @@ Question:
         }
     }
 
-    # stream=True makes requests not buffer the whole response
     with requests.post(
         f"{OLLAMA_URL}/api/chat",
         json=payload,
@@ -139,7 +146,6 @@ Question:
 
             data = json.loads(line)
 
-            # Ollama chat streaming: chunks come in data["message"]["content"]
             msg = data.get("message")
             if msg and "content" in msg:
                 yield msg["content"]
