@@ -1,0 +1,144 @@
+{
+  "repo_name": "CurlingGame",
+  "repo_source": "https://github.com/AlejandroJFerreira/CurlingGame",
+  "files_indexed": 18,
+  "chunks_indexed": 58,
+  "files": [
+    {
+      "relative_path": "README.md",
+      "category": "docs",
+      "chars": 1872,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/server.js",
+      "category": "javascript",
+      "chars": 4670,
+      "chunks": 5
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/buttonFunctions.js",
+      "category": "frontend",
+      "chars": 1153,
+      "chunks": 1
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/canvasWithTimer.js",
+      "category": "handlers",
+      "chars": 4369,
+      "chunks": 5
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/chatClient.js",
+      "category": "frontend",
+      "chars": 1689,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/collision.js",
+      "category": "javascript",
+      "chars": 912,
+      "chunks": 1
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/constants_and_state_vars.js",
+      "category": "javascript",
+      "chars": 1912,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/cue.js",
+      "category": "javascript",
+      "chars": 1462,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/curling.html",
+      "category": "frontend",
+      "chars": 1930,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/eventHandlers.js",
+      "category": "handlers",
+      "chars": 1243,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/ice.js",
+      "category": "javascript",
+      "chars": 12032,
+      "chunks": 12
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/keyboardHandlers.js",
+      "category": "handlers",
+      "chars": 678,
+      "chunks": 1
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/mouse_handlers.js",
+      "category": "handlers",
+      "chars": 3287,
+      "chunks": 4
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/queue.js",
+      "category": "javascript",
+      "chars": 1266,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/set_of_collisions.js",
+      "category": "javascript",
+      "chars": 5073,
+      "chunks": 5
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/set_of_stones.js",
+      "category": "javascript",
+      "chars": 1852,
+      "chunks": 2
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/stone.js",
+      "category": "javascript",
+      "chars": 6544,
+      "chunks": 7
+    },
+    {
+      "relative_path": "TermFinal(AlejandroFerreira)/html/timer_handlers.js",
+      "category": "handlers",
+      "chars": 787,
+      "chunks": 1
+    }
+  ],
+  "groups": {
+    "docs": [
+      "README.md"
+    ],
+    "javascript": [
+      "TermFinal(AlejandroFerreira)/server.js",
+      "TermFinal(AlejandroFerreira)/html/collision.js",
+      "TermFinal(AlejandroFerreira)/html/constants_and_state_vars.js",
+      "TermFinal(AlejandroFerreira)/html/cue.js",
+      "TermFinal(AlejandroFerreira)/html/ice.js",
+      "TermFinal(AlejandroFerreira)/html/queue.js",
+      "TermFinal(AlejandroFerreira)/html/set_of_collisions.js",
+      "TermFinal(AlejandroFerreira)/html/set_of_stones.js",
+      "TermFinal(AlejandroFerreira)/html/stone.js"
+    ],
+    "frontend": [
+      "TermFinal(AlejandroFerreira)/html/buttonFunctions.js",
+      "TermFinal(AlejandroFerreira)/html/chatClient.js",
+      "TermFinal(AlejandroFerreira)/html/curling.html"
+    ],
+    "handlers": [
+      "TermFinal(AlejandroFerreira)/html/canvasWithTimer.js",
+      "TermFinal(AlejandroFerreira)/html/eventHandlers.js",
+      "TermFinal(AlejandroFerreira)/html/keyboardHandlers.js",
+      "TermFinal(AlejandroFerreira)/html/mouse_handlers.js",
+      "TermFinal(AlejandroFerreira)/html/timer_handlers.js"
+    ]
+  }
+}

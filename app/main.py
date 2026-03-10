@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
@@ -12,6 +13,7 @@ app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
+REPO_MAP_PATH = BASE_DIR / ".repo_map.json"
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
@@ -44,3 +46,12 @@ def ingest_repo(request: RepoRequest):
         return ingest_github_repo(request.repo_url)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/repo_map")
+def repo_map():
+    if not REPO_MAP_PATH.exists():
+        return {"message": "No repo map available yet."}
+
+    with open(REPO_MAP_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
