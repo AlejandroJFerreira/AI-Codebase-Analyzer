@@ -1,22 +1,37 @@
 # AI Codebase Analyzer
 
-An AI-powered tool that indexes a software repository and allows users to ask natural language questions about the codebase. The system retrieves relevant code snippets using vector search and generates explanations using a local LLM.
+AI Codebase Analyzer is a Retrieval-Augmented Generation (RAG) tool that ingests a local or GitHub-hosted repository, indexes its source code into a vector database, and answers natural language questions about the codebase using a local LLM.
 
-## Overview
-
-AI Codebase Analyzer ingests a code repository, splits files into semantic chunks, and stores them in a vector database. When a user asks a question, the system retrieves the most relevant code segments and uses a language model to generate an answer grounded in the retrieved context.
-
-This enables developers to quickly understand unfamiliar codebases, explore system architecture, and locate relevant implementation details.
+The system combines repository structure metadata, semantic code retrieval, and LLM-based reasoning to help users understand unfamiliar repositories, identify important files, and inspect implementation details.
 
 ## Features
 
-* Natural language Q&A for codebases
-* Vector search using **ChromaDB**
-* Local LLM inference via **Ollama**
-* Fast API interface built with **FastAPI**
-* Chunked code ingestion for accurate retrieval
-* Source references showing which files were used to generate answers
-* Skips unnecessary directories (virtual environments, build folders, etc.)
+- Natural language Q&A over indexed codebases
+- GitHub repository ingestion by URL
+- Chunked code indexing for semantic retrieval
+- Vector search using **ChromaDB**
+- Local LLM inference through **Ollama**
+- FastAPI backend for querying and ingestion
+- Browser-based frontend interface
+- Streaming responses for interactive Q&A
+- Cited source files and chunk references in answers
+- Repository map support for broader architecture questions
+- Skips unnecessary directories such as virtual environments and build artifacts
+
+## How It Works
+
+1. A repository is ingested from either:
+   - a local folder path, or
+   - a public GitHub repository URL
+2. Source files are split into overlapping chunks
+3. Chunks are stored in **ChromaDB** with file metadata
+4. A lightweight repository map is generated to capture file structure
+5. A user asks a question through the API or frontend
+6. Relevant chunks are retrieved from the vector database
+7. The local LLM uses both:
+   - retrieved code context
+   - repository map information
+8. The system returns an answer with cited sources
 
 ## Architecture
 
@@ -25,24 +40,36 @@ Codebase → Ingestion → Chunking → ChromaDB (vector store)
                                 ↓
                         Semantic Retrieval
                                 ↓
-User Question → FastAPI → Context Assembly → Ollama LLM → Answer
+User Question → FastAPI → Repo Map + Context Assembly → Ollama LLM → Answer
 ```
 
 ## Project Structure
 
-```
+```text
 ai-codebase-analyzer
 │
 ├── app
-│   ├── main.py        # FastAPI server
-│   ├── ingest.py      # Codebase indexing script
-│   ├── query.py       # Retrieval + LLM interaction
+│   ├── main.py
+│   ├── ingest.py
+│   ├── query.py
 │   └── __init__.py
 │
-├── .chroma            # Local vector database (ignored in git)
-├── .env               # Environment variables (ignored in git)
+├── frontend
+│   └── index.html
+│
+├── .chroma
+├── .repo_map.json
+├── .env
 ├── .gitignore
 └── README.md
+```
+
+## Supported File Types
+
+The ingestion pipeline currently indexes source and documentation files with these extensions:
+
+```text
+.py, .js, .ts, .cpp, .c, .h, .hpp, .java, .cs, .md, .html, .css
 ```
 
 ## Installation
@@ -51,7 +78,7 @@ ai-codebase-analyzer
 
 ```bash
 git clone https://github.com/AlejandroJFerreira/AI-Codebase-Analyzer.git
-cd ai-codebase-analyzer
+cd AI-Codebase-Analyzer
 ```
 
 ### 2. Create a Python virtual environment
@@ -62,13 +89,13 @@ python -m venv .venv
 
 Activate it:
 
-Windows:
+**Windows**
 
 ```bash
 .venv\Scripts\activate
 ```
 
-Mac/Linux:
+**Mac/Linux**
 
 ```bash
 source .venv/bin/activate
@@ -82,102 +109,180 @@ pip install fastapi uvicorn chromadb requests python-dotenv
 
 ### 4. Install Ollama
 
-Download and install Ollama:
+Download Ollama from:
 
+```text
 https://ollama.com
+```
 
-Pull a model:
+Then pull a model:
 
 ```bash
 ollama pull llama3.1
 ```
 
-Ollama will run locally on:
+Ollama runs locally at:
 
-```
+```text
 http://localhost:11434
 ```
 
-## Usage
+## Running the Project
 
-### 1. Index a repository
-
-Run the ingestion script and provide the path to the repo you want to analyze.
-
-```bash
-python app/ingest.py
-```
-
-Example:
-
-```
-Enter path to codebase folder:
-C:\Projects\my-repository
-```
-
-This will:
-
-* Scan the repository
-* Split files into chunks
-* Store embeddings in ChromaDB
-
-### 2. Start the API server
+### Start the FastAPI server
 
 ```bash
 uvicorn app.main:app --reload --reload-dir app
 ```
 
-Server runs at:
+Then open:
 
-```
+```text
 http://127.0.0.1:8000
 ```
 
-### 3. Ask questions about the codebase
+This launches the browser frontend.
 
-Open the interactive API docs:
+## Usage
 
+### Option A: Ingest a GitHub Repository from the UI
+
+1. Open the frontend:
+
+```text
+http://127.0.0.1:8000
 ```
-http://127.0.0.1:8000/docs
+
+2. Paste a public GitHub repository URL into the **Ingest GitHub Repository** field
+3. Click **Ingest Repo**
+4. Wait for indexing to finish
+5. Ask questions about the repository
+
+Example repository URL:
+
+```text
+https://github.com/user/repo
 ```
 
-Use the `/ask` endpoint with a question such as:
+### Option B: Ingest a Local Repository from the CLI
 
+Run:
+
+```bash
+python app/ingest.py
 ```
-Explain how ingest.py works
+
+Then enter a local folder path such as:
+
+```text
+C:\Projects\my-repository
+```
+
+This will:
+
+- scan supported files
+- chunk source text
+- index chunks into ChromaDB
+- generate a repository map
+
+## Asking Questions
+
+You can ask questions through:
+
+- the browser frontend
+- API endpoints
+- FastAPI interactive docs
+
+### Browser Interface
+
+Open:
+
+```text
+http://127.0.0.1:8000
+```
+
+Example questions:
+
+- Explain how this codebase works
+- What are the main modules in this repository?
+- Which file appears to be the main entry point?
+- What technologies or frameworks does this project use?
+
+### API Endpoints
+
+#### JSON response with citations
+
+```text
+GET /ask?question=...
+```
+
+Example:
+
+```text
+http://127.0.0.1:8000/ask?question=Explain%20how%20this%20codebase%20works
 ```
 
 Example response:
 
 ```json
 {
-  "answer": "Explanation of the code...",
+  "answer": "This repository consists of ...",
   "sources": [
     {
-      "path": "app/ingest.py",
-      "chunk": 1
+      "path": ".repo_map.json",
+      "chunk": "summary"
+    },
+    {
+      "path": "server.js",
+      "chunk": 0
     }
   ]
 }
 ```
 
+#### Streaming response
+
+```text
+GET /ask_stream?question=...
+```
+
+Returns a progressively streamed response for interactive use.
+
+#### Repository map
+
+```text
+GET /repo_map
+```
+
+Returns the repository structure summary used to help answer architecture-level questions.
+
+## Example Workflow
+
+1. Install Ollama and pull a model
+2. Start the FastAPI server
+3. Open the browser UI
+4. Ingest a GitHub repository
+5. Ask questions about the codebase
+6. Inspect cited source files in the response
+
 ## Technologies Used
 
-* **Python**
-* **FastAPI**
-* **ChromaDB**
-* **Ollama**
-* **LLaMA 3.1**
-* **Vector embeddings / semantic search**
+- Python
+- FastAPI
+- ChromaDB
+- Ollama
+- LLaMA 3.1
+- Vector embeddings / semantic retrieval
+- Retrieval-Augmented Generation (RAG)
 
 ## Future Improvements
 
-* Streaming responses for faster UI feedback
-* Web interface for interactive queries
-* GitHub repository ingestion via URL
-* Support for more programming languages
-* Caching and performance optimizations
-* Multi-repository indexing
+- Multi-repository indexing
+- File preview panel for cited sources
+- Better architecture summaries
+- Support for additional programming languages
+- Improved caching and prompt optimization
+- Public demo deployment
 
 ## License
 
